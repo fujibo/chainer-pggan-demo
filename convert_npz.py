@@ -11,6 +11,8 @@ def main():
     model = np.load(args.src_path)
 
     model_dest = dict()
+    dic = {'4x4': 7, '8x8': 6, '16x16': 5, '32x32': 4, '64x64': 3, '128x128': 2, '256x256': 1}
+
     for key, value in model.items():
         if key == 'lod':
             # value = 0.0
@@ -23,16 +25,15 @@ def main():
         if head == '4x4':
             if key.startswith('4x4/Dense'):
                 if key == '4x4/Dense/W':
-                    key = key.replace('4x4/Dense', 'fc6_1')
+                    key = key.replace('4x4/Dense', 'fc{}_1'.format(dic[head]))
                 
                 elif key == '4x4/Dense/b':
-                    key = key.replace('4x4/Dense', 'b6_1')
+                    key = key.replace('4x4/Dense', 'b{}_1'.format(dic[head]))
 
             else:
-                key = key.replace('4x4/Conv', 'conv6_2')
+                key = key.replace('4x4/Conv', 'conv{}_2'.format(dic[head]))
 
         elif 'x' in head:
-            dic = {'8x8': 6, '16x16': 5, '32x32': 4, '64x64': 3, '128x128': 2, '256x256': 1}
             # when you use deconv
             if 'Conv0_up' in key:
                 key = key.replace(f'{head}/Conv0_up',f'conv{dic[head]}_1')
@@ -77,7 +78,7 @@ def main():
                 
             value = value.transpose(3, 2, 0, 1) * std
             
-            if deconv_used and key.startswith('conv') and key.endswith('_1/W'):
+            if key.startswith('conv') and key.endswith('_1/W') and deconv_used:
                 value_pad = np.zeros(value.shape[:2] + (value.shape[2]+2, value.shape[3]+2), dtype=np.float32)
                 value_pad[:, :, 1:-1, 1:-1] = value
                 value = value_pad[:, :, 1:, 1:] + value_pad[:, :, :-1, 1:] + value_pad[:, :, 1:, :-1] + value_pad[:, :, :-1, :-1]
